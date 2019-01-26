@@ -20,3 +20,7 @@ def plots(df_raw, cols=5, figsize=5, fname='/System/Library/Fonts/PingFang.ttc')
     plt.tight_layout()
     return axes
 
+def display_all(df):
+    with pd.option_context("display.max_rows", 1000):
+        with pd.option_context("display.max_columns", 1000):
+            display(df)
