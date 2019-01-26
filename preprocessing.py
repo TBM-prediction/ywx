@@ -38,17 +38,21 @@ class DataFormatter:
     def stages1(self):
         # split cycles into 
         # 1. 空推段, 2. 上升段, 3. 稳定段 and 4. 稳定段平均值
-        input_columns, target_columns = zip(*[self.get_columns(o) for o in self.cycles])
+        pass
 
-        # self.stages = 
+    def get_model_data(self, is_problem1=True):
+        if is_problem1:
+            input_columns, target_columns = zip(*[self.get_columns(o, is_problem1) for o in self.cycles])
+            x = [o.values for o in input_columns]
+            y = [o.mode().values for o in target_columns] # TODO: go more sophisticated
 
+        return x, y
+            
     @classmethod
-    def get_columns(df, is_problem1=True):
+    def get_columns(cls, df, is_problem1=True):
         target_names = ['推进速度电位器设定值', '刀盘转速电位器设定值'] if is_problem1 else ['总推进力', '刀盘扭矩']
         input_names = [o for o in df.columns if o not in target_names]
 
         return (df[input_names], df[target_names])
 
-    # @classmethod
-    # def get_model_data(
 
