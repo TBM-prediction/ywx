@@ -1,4 +1,4 @@
-from utils.mini_imports import *
+from utils.imports import *
 
 def plots(df_raw, cols=5, figsize=5, fname='/System/Library/Fonts/PingFang.ttc'):
                                      #fname='/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc'):
