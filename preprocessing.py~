@@ -12,7 +12,7 @@ class DataFormatter:
         valid_columns = [o for o in self.df_raw.columns if o not in ('EP2次数设置', '刀盘喷水增压泵压力')]
         self.df_raw = self.df_raw.loc[:,valid_columns]
         df = self.df_raw.loc[:,'推进速度']
-        self.df_raw.loc[df > 300] = 0
+        self.df_raw.loc[:,df > 300] = 0
         begins, ends, num_zeros = zero_boundary(df)
         print(f'got {len(begins)} zeros segments')
 
