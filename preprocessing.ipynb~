@@ -1,0 +1,469 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%matplotlib inline\n",
+    "%reload_ext autoreload\n",
+    "%autoreload 2\n",
+    "\n",
+    "# import jtplot submodule from jupyterthemes\n",
+    "from jupyterthemes import jtplot\n",
+    "\n",
+    "# currently installed theme will be used to\n",
+    "# set plot style if no arguments provided\n",
+    "jtplot.style()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from preprocessing import *"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "data_path = Path('tbmData/data')\n",
+<<<<<<< HEAD
+    "fn_txt = sorted(data_path.glob('*.txt')); fn_txt[:5]"
+=======
+    "fn_txt = sorted(data_path.glob('*.txt')); fn_txt"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+    "formatter = DataFormatter(fn_txt[:3])\n",
+=======
+    "formatter = DataFormatter(fn_txt)\n",
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+    "df_raw = formatter.df_raw"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "display_all(df_raw.describe(include='all').T)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_raw['刀盘喷水增压泵压力'].count()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Split cycles"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "formatter.remove_noise()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x = df_raw['推进速度']\n",
+    "x.plot(figsize=(10,10))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+=======
+    "def get_interesting_columns(df, merge=True):\n",
+    "    columns_list = df.columns.tolist()\n",
+    "    params = []\n",
+    "    for target_param in ('推进速度', '刀盘转速', '推进力', '扭矩'):\n",
+    "        for param in columns_list:\n",
+    "            if target_param in param:\n",
+    "                params.append(param)\n",
+    "#     if merge:\n",
+    "#         import re\n",
+    "#         merge_params = [o for o in params if re.match('主驱动\\d#电机扭矩', o)]\n",
+    "#         df = pd.concat([df, df[merge_params].mean(axis=1).copy()], axis=1, copy=False)\n",
+    "        \n",
+    "    print(params)\n",
+    "    return df[list(params)]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+    "df_raw.columns.__array__().tolist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "interesting = get_interesting_columns(df_raw)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plots(interesting);"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plots(interesting, cols=1, figsize=15);"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = interesting.iloc[10500:13000]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plots(df, cols=1, figsize=15);"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "anomaly = df['推进速度']"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## sophisticated noise removal"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "formatter.remove_anomaly()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plots(interesting, cols=1, figsize=15);"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+    "formatter.cycles1()\n",
+    "len(formatter.cycles), [len(o) for o in formatter.cycles]"
+=======
+    "formatter.cycles1()"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+    "ax = None\n",
+    "for cyc in formatter.cycles:\n",
+    "    ax = plots(get_interesting_columns(cyc.reset_index(), print_=True), cols=1, figsize=10, ax=ax);"
+=======
+    "len(formatter.cycles), [len(o) for o in formatter.cycles]"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+    "ax = None\n",
+    "for cyc in formatter.cycles:\n",
+    "    ax = plots(get_interesting_columns(cyc.reset_index(), print_=False), cols=1, figsize=15);"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x, y = formatter.get_model_data()\n",
+    "y"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "x[0][0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from fastai.tabular import *"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "dir(fastai.tabular)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Turn df into databunch"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Remove empty columns"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df = formatter.df_raw.copy()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pd.unique()"
+=======
+    "for cyc in formatter.cycles:\n",
+    "    plots(get_interesting_columns(cyc), cols=1, figsize=15);"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+<<<<<<< HEAD
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "procs = [FillMissing]#, Normalize]\n",
+    "valid_idx = range(len(df)-2000, len(df))\n",
+    "dep_var = ['']"
+=======
+   "source": [
+    "r = formatter.cycles[0]['刀盘转速电位器设定值']\n",
+    "r.plot(figsize=(15, 5))\n",
+    "r = formatter.cycles[0]['推进速度电位器设定值']\n",
+    "r.plot(figsize=(15, 5))"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+<<<<<<< HEAD
+    "data = TabularDataBunch.from_df(path, df, dep_var, valid_idx=valid_idx, procs=procs, cat_names=cat_names)"
+=======
+    "x, y = formatter.get_model_data()"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+<<<<<<< HEAD
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Refactor"
+=======
+   "source": [
+    "x[0][0].tolist()"
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+<<<<<<< HEAD
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+=======
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.2"
+  },
+  "varInspector": {
+   "cols": {
+    "lenName": 16,
+    "lenType": 16,
+    "lenVar": 40
+   },
+   "kernels_config": {
+    "python": {
+     "delete_cmd_postfix": "",
+     "delete_cmd_prefix": "del ",
+     "library": "var_list.py",
+     "varRefreshCmd": "print(var_dic_list())"
+    },
+    "r": {
+     "delete_cmd_postfix": ") ",
+     "delete_cmd_prefix": "rm(",
+     "library": "var_list.r",
+     "varRefreshCmd": "cat(var_dic_list()) "
+    }
+   },
+   "types_to_exclude": [
+    "module",
+    "function",
+    "builtin_function_or_method",
+    "instance",
+    "_Feature"
+   ],
+   "window_display": false
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

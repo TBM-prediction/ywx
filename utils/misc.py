@@ -29,4 +29,3 @@ def get_interesting_columns(df, merge=True, print_=False):
         print(params)
     return df.loc[list(params)]
 
-

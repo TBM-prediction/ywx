@@ -3,6 +3,7 @@ from utils.misc import *
 class DataFormatter:
     def __init__(self, fns):
         if not isinstance(fns, list): fns = [fns]
+<<<<<<< HEAD
         with concurrent.futures.ThreadPoolExecutor() as e:
             f = partial(pd.read_csv, sep='\t', index_col=False, low_memory=False, parse_dates=['运行时间'])
             df_raw = list(tqdm_notebook(e.map(f, fns)))
@@ -12,7 +13,7 @@ class DataFormatter:
         valid_columns = [o for o in self.df_raw.columns if o not in ('EP2次数设置', '刀盘喷水增压泵压力')]
         self.df_raw = self.df_raw.loc[:,valid_columns]
         df = self.df_raw.loc[:,'推进速度']
-        self.df_raw.loc[:,df > 300] = 0
+        self.df_raw.loc[df > 300] = 0
         begins, ends, num_zeros = zero_boundary(df)
         print(f'got {len(begins)} zeros segments')
 
@@ -29,23 +30,51 @@ class DataFormatter:
     def cycles1(self):
         # split time series into cycles by speed
         df = self.df_raw.loc[:,'推进速度']
+=======
+        self.df_raw = [pd.read_csv(o, sep='\t', index_col=False, low_memory=False, parse_dates=['运行时间']) 
+                for o in fns]
+        self.df_raw = pd.concat(self.df_raw)
+
+    def remove_noise(self):
+        self.df_raw[self.df_raw['推进速度'] > 300] = 0
+
+    def remove_anomaly(self, min_num_zeros = 5):
+        df = self.df_raw['推进速度']
+        begins, ends, num_zeros = zero_boundary(df)
+
+        # interpolate on continuous columns
+        for b, e, l in zip(begins, ends, num_zeros):
+            if l <= min_num_zeros:
+                self.df_raw.iloc[b:e,2:] = np.tile(((self.df_raw.iloc[b-1,2:] + self.df_raw.iloc[e,2:])/2).values, (l, 1))
+
+
+    def cycles1(self):
+        # split time series into cycles by speed
+        df = self.df_raw['推进速度']
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
         begins, ends, _ = zero_boundary(df)
         begins, ends = ends[:-1], begins[1:]
         print('begins', begins)
         print('ends', ends)
 
         self.cycles = []
+<<<<<<< HEAD
         self.short_cycles = []
+=======
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
         for b, e in zip(begins, ends):
             min_cycle_length = 500
             # fileter out cycles that are too short
             if e - b > min_cycle_length:
                 self.cycles.append(self.df_raw.iloc[b:e])
+<<<<<<< HEAD
             else:
                 self.short_cycles.append(self.df_raw.iloc[b:e])
         [o.reset_index(drop=True, inplace=True) for o in self.cycles]
         print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
         print([len(o) for o in self.short_cycles])
+=======
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
 
     def stages1(self):
         # split cycles into 
@@ -56,7 +85,11 @@ class DataFormatter:
         if is_problem1:
             input_columns, target_columns = zip(*[self.get_columns(o, is_problem1) for o in self.cycles])
             x = [o.values for o in input_columns]
+<<<<<<< HEAD
             y = [(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns] # TODO: go more sophisticated
+=======
+            y = [o.mode().values for o in target_columns] # TODO: go more sophisticated
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
 
         return x, y
             
@@ -67,6 +100,7 @@ class DataFormatter:
 
         return (df[input_names], df[target_names])
 
+<<<<<<< HEAD
 def rolling_cumsum(df):
     df = df['刀盘功率'].rolling(10, center=True).mean()
     diff = df.diff()
@@ -77,3 +111,6 @@ def beginning_index(df):
     cs = rolling_cumsum(df)
     cs = cs > 100
     return cs.idxmax()
+=======
+
+>>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
