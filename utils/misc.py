@@ -10,9 +10,8 @@ def zero_boundary(df):
 
     begins = np.argwhere(np.array((boundary == 1))).squeeze()
     ends = np.argwhere(np.array((boundary == -1))).squeeze()
-    num_zeros = [e - b for b, e in zip(begins, ends)]
 
-    return begins, ends, num_zeros 
+    return begins, ends
 
 def get_interesting_columns(df, merge=True, print_=False):
     columns_list = df.columns.tolist()
