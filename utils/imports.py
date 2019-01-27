@@ -7,6 +7,7 @@ from fire import Fire
 import concurrent.futures
 import cv2
 from tqdm import tqdm_notebook
+import feather
 
 import torch
 
