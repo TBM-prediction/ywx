@@ -26,7 +26,6 @@ def plots(df_raw, cols=5, unit_figsize=(15, 3), ax=None, #fname='/System/Library
     plt.tight_layout()
     return axes
 
-
 def display_all(df):
     with pd.option_context("display.max_rows", 1000):
         with pd.option_context("display.max_columns", 1000):
