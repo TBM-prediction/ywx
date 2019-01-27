@@ -56,11 +56,7 @@ class DataFormatter:
         if is_problem1:
             input_columns, target_columns = zip(*[self.get_columns(o, is_problem1) for o in self.cycles])
             x = [o.values for o in input_columns]
-<<<<<<< HEAD
             y = [(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns] # TODO: go more sophisticated
-=======
-            y = [o.mode().values for o in target_columns] # TODO: go more sophisticated
->>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
 
         return x, y
             
@@ -71,7 +67,6 @@ class DataFormatter:
 
         return (df[input_names], df[target_names])
 
-<<<<<<< HEAD
 def rolling_cumsum(df):
     df = df['刀盘功率'].rolling(10, center=True).mean()
     diff = df.diff()
@@ -82,6 +77,4 @@ def beginning_index(df):
     cs = rolling_cumsum(df)
     cs = cs > 100
     return cs.idxmax()
-=======
 
->>>>>>> 59438267e8e8709ff042eb1c75a66edf6c13ed0f
