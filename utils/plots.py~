@@ -1,7 +1,6 @@
 from utils.imports import *
 
-<<<<<<< HEAD
-def plots(df_raw, cols=5, unit_figsize=(15, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
+def plots(df_raw, cols=3, unit_figsize=(15, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
                                      fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
                                      title=None):
     num_plots = df_raw.shape[1] #- 2 # omit index and timestamp
@@ -16,7 +15,6 @@ def plots(df_raw, cols=5, unit_figsize=(15, 3), ax=None, #fname='/System/Library
     # use chinese fonts
     from matplotlib import font_manager as fm
     prop = fm.FontProperties(fname=fname)
-<<<<<<< HEAD
     if ax is None:
     #if False: # no legend
         for ax in axes.flatten():

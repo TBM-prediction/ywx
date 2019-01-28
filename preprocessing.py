@@ -1,12 +1,24 @@
 from utils.misc import *
 
 class DataFormatter:
-    def __init__(self, fns):
-        if not isinstance(fns, list): fns = [fns]
-        with concurrent.futures.ThreadPoolExecutor() as e:
-            f = partial(pd.read_csv, sep='\t', index_col=False, low_memory=False, parse_dates=['运行时间'])
-            df_raw = list(tqdm_notebook(e.map(f, fns), total=len(fns)))
-        self.df_raw = pd.concat(df_raw, copy=False)
+    def __init__(self, csv_fns=None, cycle_feathers=None):
+        if csv_fns is not None:
+            fns = csv_fns
+            if not isinstance(fns, list): fns = [fns]
+            with concurrent.futures.ThreadPoolExecutor() as e:
+                f = partial(pd.read_csv, sep='\t', index_col=False, low_memory=False, parse_dates=['运行时间'])
+                df_raw = list(tqdm_notebook(e.map(f, fns), total=len(fns)))
+            self.df_raw = pd.concat(df_raw, copy=False)
+
+        elif cycle_feathers is not None:
+            fns = cycle_feathers
+            if not isinstance(fns, list): fns = [fns]
+            with concurrent.futures.ThreadPoolExecutor() as e:
+                self.cycles = list(tqdm_notebook(e.map(read_feather_fn, fns), 
+                    desc='read_dataframe', total=len(fns)))
+        else:
+            print('wrong arguments')
+
 
     def cleanup(self, min_num_zeros = 5):
         valid_columns = [o for o in self.df_raw.columns if o not in ('EP2次数设置', '刀盘喷水增压泵压力')]
@@ -44,44 +56,29 @@ class DataFormatter:
         for b, e in zip(begins, ends):
             min_cycle_length = 500
             # fileter out cycles that are too short
+            cyc = self.df_raw.iloc[b:e].reset_index(drop=True)
             if e - b > min_cycle_length:
-                self.cycles.append(self.df_raw.iloc[b:e])
+                self.cycles.append(cyc)
             else:
-                self.short_cycles.append(self.df_raw.iloc[b:e])
+                self.short_cycles.append(cyc)
         if fn is not None:
             for i, cyc in enumerate(self.cycles):
-                cyc.reset_index(drop=True).to_feather(str(fn) + str(first_idx+i))
+                cyc.to_feather(str(fn) + str(first_idx+i))
         print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
         #print([len(o) for o in self.short_cycles])
 
-    def stages1(self):
-        # split cycles into 
-        # 1. 空推段, 2. 上升段, 3. 稳定段 and 4. 稳定段平均值
-        pass
+    def get_y(self, cycles=None, is_problem1=True):
+        cycles = cycles or self.cycles
 
-    def get_model_data(self, is_problem1=True):
-        if is_problem1:
-            input_columns, target_columns = zip(*[self.get_columns(o, is_problem1) for o in self.cycles])
-            x = [o.values for o in input_columns]
-            y = [(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns] # TODO: go more sophisticated
-
-        return x, y
-            
-    @classmethod
-    def get_columns(cls, df, is_problem1=True):
         target_names = ['推进速度电位器设定值', '刀盘转速电位器设定值'] if is_problem1 else ['总推进力', '刀盘扭矩']
-        input_names = [o for o in df.columns if o not in target_names]
+        if is_problem1:
+            target_columns = [o.loc[:,target_names] for o in cycles]
 
-        return (df[input_names], df[target_names])
+            # TODO: go more sophisticated
+            # take the last point and mode of values respectively
+            y = pd.DataFrame([(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
+        else:
+            raise NotImplementedError
 
-def rolling_cumsum(df):
-    df = df['刀盘功率'].rolling(10, center=True).mean()
-    diff = df.diff()
-    diff[diff<0] = 0
-    return diff.cumsum()
-
-def beginning_index(df):
-    cs = rolling_cumsum(df)
-    cs = cs > 100
-    return cs.idxmax()
+        return y
 

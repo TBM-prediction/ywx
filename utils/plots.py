@@ -1,6 +1,6 @@
 from utils.imports import *
 
-def plots(df_raw, cols=5, unit_figsize=(15, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
+def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
                                      fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
                                      title=None):
     num_plots = df_raw.shape[1] #- 2 # omit index and timestamp

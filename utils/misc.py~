@@ -10,9 +10,8 @@ def zero_boundary(df):
 
     begins = np.argwhere(np.array((boundary == 1))).squeeze()
     ends = np.argwhere(np.array((boundary == -1))).squeeze()
-    num_zeros = [e - b for b, e in zip(begins, ends)]
 
-    return begins, ends, num_zeros 
+    return begins, ends
 
 def get_interesting_columns(df, merge=True, print_=False):
     columns_list = df.columns.tolist()
@@ -27,5 +26,18 @@ def get_interesting_columns(df, merge=True, print_=False):
 #         df = pd.concat([df, df[merge_params].mean(axis=1).copy()], axis=1, copy=False)
     if print_:
         print(params)
-    return df.loc[list(params)]
+    return df.loc[:,params]
 
+def rolling_cumsum(df):
+    df = df['刀盘功率'].rolling(10, center=True).mean()
+    diff = df.diff()
+    diff[diff<0] = 0
+    return diff.cumsum()
+
+def beginning_index(df):
+    cs = rolling_cumsum(df)
+    cs = cs > 100
+    return cs.idxmax()
+
+def read_feather_fn(fn):
+    return feather.read_dataframe(str(fn))
