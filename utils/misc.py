@@ -41,3 +41,4 @@ def beginning_index(df):
 
 def read_feather_fn(fn):
     return feather.read_dataframe(str(fn))
+
