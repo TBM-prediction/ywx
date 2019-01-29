@@ -1,6 +1,8 @@
 from fastai import *
-#from fastai.vision import *
+
 from fastai.tabular import *
+from fastai.text import *
+
 from IPython.core.debugger import set_trace
 import argparse
 from fire import Fire

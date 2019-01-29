@@ -70,10 +70,8 @@ def tile_with_noise(cycles, idx, mulr, cont_names, noise_size=(-2, 5)):
     return df_conts
 
 
-class crit(nn.Module):
-    def __init__(self):
-        pass
-
-    def forward(self, inputs, targets):
-        pass
+l1 = nn.L1Loss(reduction='none')
+def our_metrics(input, target):
+    # score range: (-NaN, 2]
+    return 2 - (l1(input, target) / target).sum() / target.view(-1).size()[0]
 
