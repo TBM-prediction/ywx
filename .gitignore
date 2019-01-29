@@ -2,4 +2,6 @@ tbmData
 .*~
 .ipynb_checkpoints
 __pycache__
+
+models
 tmp
