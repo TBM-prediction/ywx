@@ -8,7 +8,7 @@ def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/
     figsize = (unit_figsize[0] * cols, unit_figsize[1] * rows)
 
     ax = ax[:num_plots] if ax is not None else ax
-    axes = df_raw.plot(y=list(range(num_plots)), subplots=True, figsize=figsize, 
+    axes = df_raw.plot(subplots=True, figsize=figsize, 
             layout=(rows, cols), ax=ax, legend=ax is None, title=title)
             #fontsize=0,layout=(rows, cols), ax=ax, legend=False)
 

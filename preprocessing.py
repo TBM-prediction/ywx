@@ -67,18 +67,16 @@ class DataFormatter:
         print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
         #print([len(o) for o in self.short_cycles])
 
-    def get_y(self, cycles=None, is_problem1=True):
+    def get_y(self, dep_vars, cycles=None):
         cycles = cycles or self.cycles
 
-        target_names = ['推进速度电位器设定值', '刀盘转速电位器设定值'] if is_problem1 else ['总推进力', '刀盘扭矩']
-        if is_problem1:
-            target_columns = [o.loc[:,target_names] for o in cycles]
+        target_names = dep_vars
 
-            # TODO: go more sophisticated
-            # take the last point and mode of values respectively
-            y = pd.DataFrame([(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
-        else:
-            raise NotImplementedError
+        target_columns = [o.loc[:,target_names] for o in cycles]
+
+        # TODO: go more sophisticated
+        # take the last point and mode of values respectively
+        y = pd.DataFrame([(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
 
         return y
 
