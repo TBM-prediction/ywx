@@ -23,7 +23,8 @@ class ContModel1(RNNCore):
         x_cat, x_cont = x[:,self.n_cat], x[:,self.n_cat:]
         bs,_ = x_cont.size()
         input = x_cont.view(bs, self.sl, self.n_cont)
-        
+        self.reset()
+
         if bs!=self.bs:
             self.bs=bs
             self.reset()
@@ -37,4 +38,4 @@ class ContModel1(RNNCore):
             outputs.append(raw_output)
         self.hidden = to_detach(new_hidden, cpu=False)
         return raw_outputs, outputs
-    
+

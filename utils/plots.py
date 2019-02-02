@@ -1,5 +1,12 @@
 from utils.imports import *
 
+def set_font(label, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
+    # use chinese fonts
+    from matplotlib import font_manager as fm
+    prop = fm.FontProperties(fname=fname)
+    plt.setp(label, fontproperties=prop)
+
+
 def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
                                      fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
                                      title=None):
@@ -12,16 +19,13 @@ def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/
             layout=(rows, cols), ax=ax, legend=ax is None, title=title)
             #fontsize=0,layout=(rows, cols), ax=ax, legend=False)
 
-    # use chinese fonts
-    from matplotlib import font_manager as fm
-    prop = fm.FontProperties(fname=fname)
     if ax is None:
     #if False: # no legend
         for ax in axes.flatten():
             legend = ax.legend()
-            plt.setp(legend.texts, fontproperties=prop)
+            set_font(legend.text, fname=fname)
             xlabel = ax.xaxis.label
-            plt.setp(xlabel, fontproperties=prop)
+            set_font(xlabel, fname=fname)
 
     plt.tight_layout()
     return axes

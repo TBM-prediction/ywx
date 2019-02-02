@@ -10,7 +10,7 @@ class MultiDeptTabularDataBunch(DataBunch):
                 test_df=None, **kwargs)->DataBunch:
         "Create a `DataBunch` from `df` and `valid_idx` with `dep_var`."
         cat_names = ifnone(cat_names, []).copy()
-        cont_names = ifnone(cont_names, list(set(df)-set(cat_names)-set(dep_var))) # modified to use set()
+        cont_names = ifnone(cont_names, [o for o in df if o not in cat_names and o not in dep_var])
         procs = listify(procs)
         src = (TabularList.from_df(df, path=path, cat_names=cat_names, cont_names=cont_names, procs=procs)
                            .split_by_idx(valid_idx))

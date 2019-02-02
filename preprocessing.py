@@ -76,7 +76,7 @@ class DataFormatter:
 
         # TODO: go more sophisticated
         # take the last point and mode of values respectively
-        y = pd.DataFrame([(o.iloc[-1,0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
+        y = pd.DataFrame([(o.iloc[-100:,0].mode().values[0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
 
         return y
 
