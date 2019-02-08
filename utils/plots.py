@@ -23,7 +23,7 @@ def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/
     #if False: # no legend
         for ax in axes.flatten():
             legend = ax.legend()
-            set_font(legend.text, fname=fname)
+            set_font(legend.texts, fname=fname)
             xlabel = ax.xaxis.label
             set_font(xlabel, fname=fname)
 

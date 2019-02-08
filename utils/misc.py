@@ -72,7 +72,6 @@ def tile_with_noise(cycles, idx, mulr, cont_names, noise_size=(-2, 5)):
 def ni(it): return next(iter(it))
 
 
-
 eps= 1e-12
 def our_metrics(input, target):
     # score range: (-NaN, 2]
@@ -91,10 +90,15 @@ def weighted_our_loss(weight):
     def loss(input, target): return rnn_metrics([weight * input[0]], weight * target)
     return loss
 
-def weighted_rnn_mse(weight, scale=1):
-    l2 = nn.MSELoss()
-    def rnn_mse(input, target): 
-        print(input[0].shape, target.shape)
-        return l2(weight * input[0], weight * target) / scale
+l2 = nn.MSELoss()
+def weighted_rnn_mse(weight):
+    def rnn_mse(input, target): return l2(weight * input[0], weight * target)
     return rnn_mse
+
+l1 = nn.L1Loss()
+def our_log_loss(input, target):
+    return l2(input, (target+eps).log())
+
+def rnn_log_loss(input, target):
+    return our_log_loss(input[0], target)
 
