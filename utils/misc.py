@@ -40,65 +40,60 @@ def get_interesting_columns(df, merge=True, print_=False):
 def rolling_cumsum(df):
     df = df.loc[:,'刀盘功率'].rolling(10, center=True).mean()
     diff = df.diff()
-    diff[diff<0] = 0
+    diff.loc[diff<0] = 0
     return diff.cumsum()
-
-def beginning_index(df):
-    cs = rolling_cumsum(df)
-    cs = cs > 100
-    return cs.idxmax()
 
 def read_feather_fn(fn):
     return feather.read_dataframe(str(fn))
 
-def flatten_and_cat(conts, deps, cats=None):
+def flatten_and_cat(conts, deps, cats=None, sl=30):
     columns = list(conts[0].columns)
     cyc_cont = pd.DataFrame([o.values.flatten() for o in conts])
 
     # add dependent variables
     cyc_cont = pd.concat([cyc_cont, deps], axis=1, copy=False)
-    cyc_cont.columns = ['_'.join([str(o), str(i)]) for i in range(30)
-                                                    for o in columns] + list(deps.columns)
+    cyc_cont.columns = ['_'.join([str(o), str(i)]) for i in range(sl) for o in columns] + deps.columns.tolist()
 
     print('cyc_cont.shape', cyc_cont.shape)
     return cyc_cont
 
-def tile_with_noise(cycles, idx, mulr, cont_names, noise_size=(-2, 5)):
-    noise = (np.random.random(mulr) * (noise_size[1]-noise_size[0]+1)).astype('uint8') + noise_size[0]
-    df_conts = [o.loc[:,cont_names].iloc[i+n:i+30+n] for n in tqdm_notebook(noise)
-                                                    for i, o in zip(idx, cycles)]
-    return df_conts
+def extract_input(df, idx, sl, cont_names=None):
+    idx = list(chain(*[list(range(df.index.get_loc(i).start+idx[i], df.index.get_loc(i).start+idx[i]+sl)) 
+        for i in df.index.levels[0]]))
+    df = df.iloc[idx]
+    if cont_names is not None:
+        df = df.loc[:,cont_names]
+    return df
+
+def normalize_df(df, mean, std):
+    return (df.loc[:,mean.index] - mean) / (1e-7 + std)
+
+def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
+    mulr, cont_names, sl = config.mulr, config.cont_names, config.sl
+
+    if normalize:
+        tile = extract_input(df, idx, config.sl, cont_names)
+        mean,std = tile.loc[:,cont_names].mean(),tile.loc[:,cont_names].std()
+        df.loc[:,cont_names] = normalize_df(df, mean, std)
+
+    tile = extract_input(df, idx, config.sl, cont_names) # extract with normalized df
+    tiles = [tile]
+
+    if config.mulr > 1:
+        m, M = noise_size
+        noises = (np.random.random(config.mulr-1) * (M-m+1)).astype('uint8') + m
+        tiles += [extract_input(df, idx+n, config.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
+
+    tiles = [t.loc[i] for t in tiles
+                        for i in t.index.levels[0]]
+    if normalize:
+        return tiles, (mean, std)
+    else:
+        return tiles
+
+def concat_cycles(cycles):
+    return pd.concat(cycles, axis=0, keys=range_of(cycles), names=['cycle', 't'])
+
 
 def ni(it): return next(iter(it))
-
-
-eps= 1e-12
-def our_metrics(input, target):
-    # score range: (-NaN, 2]
-    return 2 - (torch.abs(input-target) / (target+eps)).sum() / target.view(-1).size()[0]
-
-def our_metrics_np(input, target):
-    # score range: (-NaN, 2]
-    return 2 - (np.abs(input-target) / (target+eps)).sum() / target.size
-
-def rnn_metrics(input, target):
-    # negate for minimization
-    # score is best when approaches -2
-    return -our_metrics(input[0], target)
-
-def weighted_our_loss(weight):
-    def loss(input, target): return rnn_metrics([weight * input[0]], weight * target)
-    return loss
-
-l2 = nn.MSELoss()
-def weighted_rnn_mse(weight):
-    def rnn_mse(input, target): return l2(weight * input[0], weight * target)
-    return rnn_mse
-
-l1 = nn.L1Loss()
-def our_log_loss(input, target):
-    return l2(input, (target+eps).log())
-
-def rnn_log_loss(input, target):
-    return our_log_loss(input[0], target)
 

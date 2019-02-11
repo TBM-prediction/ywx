@@ -7,25 +7,22 @@ def set_font(label, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
     plt.setp(label, fontproperties=prop)
 
 
-def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None, #fname='/System/Library/Fonts/PingFang.ttc'):
-                                     fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc',
-                                     title=None):
-    num_plots = df_raw.shape[1] #- 2 # omit index and timestamp
-    rows = num_plots // cols + 1
+def ceildiv(a, b):
+    return -(-a//b)
+
+def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None,
+        fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc', title=None):
+    num_plots = df_raw.shape[1]
+    rows = ceildiv(num_plots, cols)
     figsize = (unit_figsize[0] * cols, unit_figsize[1] * rows)
 
-    ax = ax[:num_plots] if ax is not None else ax
+    if ax is not None: ax = ax[:num_plots]
     axes = df_raw.plot(subplots=True, figsize=figsize, 
             layout=(rows, cols), ax=ax, legend=ax is None, title=title)
-            #fontsize=0,layout=(rows, cols), ax=ax, legend=False)
 
-    if ax is None:
-    #if False: # no legend
-        for ax in axes.flatten():
-            legend = ax.legend()
-            set_font(legend.texts, fname=fname)
-            xlabel = ax.xaxis.label
-            set_font(xlabel, fname=fname)
+    for ax in axes.flatten():
+        set_font(ax.legend_.texts, fname=fname)
+        set_font(ax.xaxis.label, fname=fname)
 
     plt.tight_layout()
     return axes

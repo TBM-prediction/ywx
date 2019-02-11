@@ -5,7 +5,7 @@ class DataFormatter:
         if csv_fns is not None:
             fns = csv_fns
             if not isinstance(fns, list): fns = [fns]
-            with concurrent.futures.ThreadPoolExecutor() as e:
+            with concurrent.futures.ThreadPoolExecutor(4) as e:
                 f = partial(pd.read_csv, sep='\t', index_col=False, low_memory=False, parse_dates=['运行时间'])
                 df_raw = list(tqdm_notebook(e.map(f, fns), total=len(fns)))
             self.df_raw = pd.concat(df_raw, copy=False)
@@ -14,8 +14,10 @@ class DataFormatter:
             fns = cycle_feathers
             if not isinstance(fns, list): fns = [fns]
             with concurrent.futures.ThreadPoolExecutor() as e:
-                self.cycles = list(tqdm_notebook(e.map(read_feather_fn, fns), 
+                cycles = list(tqdm_notebook(e.map(read_feather_fn, fns), 
                     desc='read_dataframe', total=len(fns)))
+            self.cycles = concat_cycles(cycles)
+
         else:
             print('wrong arguments')
 
@@ -28,14 +30,6 @@ class DataFormatter:
         begins, ends = zero_boundary(df)
         print(f'got {len(begins)} zeros segments')
 
-        # interpolate on continuous columns
-       #def f(b, e):
-       #    if e - b <= min_num_zeros:
-       #        self.df_raw.iloc[b:e] = np.NaN
-       #        #self.df_raw.iloc[b:e,2:] = np.tile(((self.df_raw.iloc[b-1,2:] + self.df_raw.iloc[e,2:])/2).values, (l, 1))
-
-       #with concurrent.futures.ThreadPoolExecutor(defaults.cpus//2) as e:
-       #    list(tqdm_notebook(e.map(f, begins, ends)))
         idx = [o for b, e in zip(begins, ends) if e - b <= min_num_zeros
                 for o in range(b, e)]
         self.df_raw[self.df_raw.index.isin(idx)] = np.NaN
@@ -44,7 +38,7 @@ class DataFormatter:
         self.df_raw.interpolate(inplace=True)
 
     def cycles1(self, fn=None, first_idx=0):
-        # split time series into cycles by speed
+        # split time series into cycles
         df = self.df_raw.loc[:,'推进速度']
         begins, ends = zero_boundary(df)
         begins, ends = ends[:-1], begins[1:]
@@ -67,16 +61,56 @@ class DataFormatter:
         print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
         #print([len(o) for o in self.short_cycles])
 
-    def get_y(self, dep_vars, cycles=None):
-        cycles = cycles or self.cycles
+    def cycles2(self, save_fn=None, first_idx=0):
+        # split time series into cycles
+        df = self.df_raw.loc[:,'推进速度']
+        begins, ends = zero_boundary(df)
+        begins, ends = ends[:-1], begins[1:]
+        print('begins', begins)
+        print('ends', ends)
 
+        cycles = []
+        short_cycles = 0
+        for b, e in zip(begins, ends):
+            min_cycle_length = 500
+            # fileter out cycles that are too short
+            if e - b > min_cycle_length:
+                cycles.append(self.df_raw.iloc[b:e].reset_index(drop=True))
+            else:
+                short_cycles += 1
+        
+        # concatenate cycles to a multi-indexed df
+        self.cycles = concat_cycles(cycles)
+
+        if save_fn is not None:
+            for i, cyc in enumerate(cycles):
+                cyc.to_feather(str(fn) + str(first_idx+i))
+        print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
+
+
+    def beginning_index(self, dfs=None, postpond=0, thresh=100):
+        if dfs is None: 
+            dfs = self.cycles
+        else:
+            if not isinstance(dfs, collections): 
+                dfs = [dfs]
+        return np.array([(rolling_cumsum(dfs.loc[i]) > thresh).idxmax() + postpond 
+                    for i in tqdm_notebook(dfs.index.levels[0], 'beginning_index')])
+
+    def get_y(self, dep_vars, cycles=None, normalize=True):
+        cycles = ifnone(cycles, self.cycles)
         target_names = dep_vars
-
-        target_columns = [o.loc[:,target_names] for o in cycles]
+        target_columns = [cycles.loc[o,target_names] for o in cycles.index.levels[0]]
 
         # TODO: go more sophisticated
         # take the last point and mode of values respectively
-        y = pd.DataFrame([(o.iloc[-100:,0].mode().values[0], o.iloc[:,1].mode().values[0]) for o in target_columns], columns=target_names)
+        cols = [o.astype('int') for o in target_columns]
+        y = pd.DataFrame([(o.iloc[200:,0].mode().values[0].astype('float'), o.iloc[:,1].mode().values[0].astype('float')) for o in cols], columns=target_names)
 
-        return y
+        if normalize:
+            mean,std = y.mean(),y.std()
+            y = normalize_df(y, mean, std)
+            return y, (mean, std)
+        else: 
+            return y
 
