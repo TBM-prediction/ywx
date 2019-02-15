@@ -1,5 +1,6 @@
 from .imports import *
 
+eps= 1e-7
 def zero_boundary(df):
     zeros = (df == 0).astype('int')
     boundary = zeros.diff()
@@ -66,7 +67,15 @@ def extract_input(df, idx, sl, cont_names=None):
     return df
 
 def normalize_df(df, mean, std):
-    return (df.loc[:,mean.index] - mean) / (1e-7 + std)
+    return (df.loc[:,mean.index] - mean) / (eps + std)
+
+def denormalize(y, mean, std, cuda=False):
+    stats = (mean, std)
+    if isinstance(y, torch.Tensor): 
+        stats = (tensor(o).float() for o in stats)
+        if cuda: stats = (o.cuda() for o in stats)
+    mean, std = (o for o in stats)
+    return y * (float(eps) + std.float()) + mean
 
 def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
     mulr, cont_names, sl = config.mulr, config.cont_names, config.sl
@@ -97,3 +106,9 @@ def concat_cycles(cycles):
 
 def ni(it): return next(iter(it))
 
+def train_eval(learn):
+    # print score
+    pass
+
+def evaluate(learn):
+    pass
