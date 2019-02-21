@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from fire import Fire
 from pandas.api.types import is_numeric_dtype, is_categorical_dtype
 from pprint import pprint
+from fastai.callbacks.mem import preload_pytorch
 from IPython.core.debugger import set_trace
 from tqdm import tqdm_notebook
 

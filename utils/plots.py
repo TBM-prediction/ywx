@@ -16,16 +16,16 @@ def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None,
     rows = ceildiv(num_plots, cols)
     figsize = (unit_figsize[0] * cols, unit_figsize[1] * rows)
 
-    if ax is not None: ax = ax[:num_plots]
-    axes = df_raw.plot(subplots=True, figsize=figsize, 
+    if ax is not None: ax = ax.flatten()[:num_plots]
+    ax = df_raw.plot(subplots=True, figsize=figsize, 
             layout=(rows, cols), ax=ax, legend=ax is None, title=title)
 
-    for ax in axes.flatten():
-        set_font(ax.legend_.texts, fname=fname)
-        set_font(ax.xaxis.label, fname=fname)
+    for a in ax.flatten():
+        if a.legend_: set_font(a.legend_.texts, fname=fname)
+        if a.xaxis: set_font(a.xaxis.label, fname=fname)
 
     plt.tight_layout()
-    return axes
+    return ax
 
 def display_all(df):
     with pd.option_context("display.max_rows", 1000):

@@ -64,6 +64,7 @@ class DataFormatter:
 
     def cycles2(self, save_fn=None, first_idx=0):
         # split time series into cycles
+        # use multi-index dataframe
         df = self.df_raw.loc[:,'推进速度']
         begins, ends = zero_boundary(df)
         begins, ends = ends[:-1], begins[1:]
@@ -99,7 +100,7 @@ class DataFormatter:
                     for i in tqdm_notebook(dfs.index.levels[0], 'beginning_index')])
         return self.idx
 
-    def get_x(self, normalize=True):
+    def get_x(self, noise_size=(-2,5), normalize=True):
         df = self.cycles
         cont_names = self.context.cont_names
 
@@ -116,6 +117,7 @@ class DataFormatter:
             noises = (np.random.random(self.context.mulr-1) * (M-m+1)).astype('uint8') + m
             tiles += [extract_input(df, self.idx+n, self.context.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
 
+        # flatten along cycle
         tiles = [t.loc[i] for t in tiles
                             for i in t.index.levels[0]]
         if normalize:

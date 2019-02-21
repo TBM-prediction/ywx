@@ -1,6 +1,6 @@
 from .imports import *
 
-eps= 1e-7
+eps = float(1e-7)
 def zero_boundary(df):
     zeros = (df == 0).astype('int')
     boundary = zeros.diff()
@@ -69,36 +69,36 @@ def extract_input(df, idx, sl, cont_names=None):
 def normalize_df(df, mean, std):
     return (df.loc[:,mean.index] - mean) / (eps + std)
 
-def denormalize(y, mean, std, cuda=False):
+def denormalize(y, mean, std):
     stats = (mean, std)
     if isinstance(y, torch.Tensor): 
         stats = (tensor(o).float() for o in stats)
-        if cuda: stats = (o.cuda() for o in stats)
+        if y.device.type == 'cuda': stats = (o.cuda() for o in stats)
     mean, std = (o for o in stats)
-    return y * (float(eps) + std.float()) + mean
+    return y * (eps + std) + mean
 
-def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
-    mulr, cont_names, sl = config.mulr, config.cont_names, config.sl
+# def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
+    # mulr, cont_names, sl = config.mulr, config.cont_names, config.sl
 
-    if normalize:
-        tile = extract_input(df, idx, config.sl, cont_names)
-        mean,std = tile.loc[:,cont_names].mean(),tile.loc[:,cont_names].std()
-        df.loc[:,cont_names] = normalize_df(df, mean, std)
+    # if normalize:
+        # tile = extract_input(df, idx, config.sl, cont_names)
+        # mean,std = tile.loc[:,cont_names].mean(),tile.loc[:,cont_names].std()
+        # df.loc[:,cont_names] = normalize_df(df, mean, std)
 
-    tile = extract_input(df, idx, config.sl, cont_names) # extract with normalized df
-    tiles = [tile]
+    # tile = extract_input(df, idx, config.sl, cont_names) # extract with normalized df
+    # tiles = [tile]
 
-    if config.mulr > 1:
-        m, M = noise_size
-        noises = (np.random.random(config.mulr-1) * (M-m+1)).astype('uint8') + m
-        tiles += [extract_input(df, idx+n, config.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
+    # if config.mulr > 1:
+        # m, M = noise_size
+        # noises = (np.random.random(config.mulr-1) * (M-m+1)).astype('uint8') + m
+        # tiles += [extract_input(df, idx+n, config.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
 
-    tiles = [t.loc[i] for t in tiles
-                        for i in t.index.levels[0]]
-    if normalize:
-        return tiles, (mean, std)
-    else:
-        return tiles
+    # tiles = [t.loc[i] for t in tiles
+                        # for i in t.index.levels[0]]
+    # if normalize:
+        # return tiles, (mean, std)
+    # else:
+        # return tiles
 
 def concat_cycles(cycles):
     return pd.concat(cycles, axis=0, keys=range_of(cycles), names=['cycle', 't'])

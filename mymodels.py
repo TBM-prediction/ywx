@@ -40,17 +40,17 @@ class ContModel1(RNNCore):
         self.hidden = to_detach(new_hidden, cpu=False)
         return raw_outputs, outputs
 
-def get_cont_model(config, databunch, hyper_params):
-    rnn_enc = ContModel1(1, config.n_cont, hyper_params['n_hidden'], hyper_params['n_layers'], sl=config.sl,
+def get_cont_model(context, databunch, hyper_params):
+    rnn_enc = ContModel1(1, context.n_cont, hyper_params['n_hidden'], hyper_params['n_layers'], sl=context.sl,
                          hidden_p=hyper_params['hidden_p'], input_p=hyper_params['input_p'], embed_p=0, weight_p=hyper_params['weight_p'])
     model = MultiInputSequentialRNN(rnn_enc, PoolingLinearClassifier(hyper_params['layers'], hyper_params['drops'])).cuda()
 
-    learner = Learner(databunch, model, loss_func=hyper_params['loss_func'], metrics=config.metrics, opt_func=optim.SGD)
+    learner = Learner(databunch, model, loss_func=hyper_params['loss_func'], metrics=context.metrics, opt_func=optim.SGD)
 
     # learner.callback_fns += [ShowGraph, partial(SaveModelCallback, name='rnn0')]
     learner.callback_fns += [ShowGraph,]
-    learner.callbacks += [TerminateOnNaNCallback()]
-    learner.callbacks.append(RNNTrainer(learner, config.sl, alpha=hyper_params['alpha'], beta=hyper_params['beta']))
+    learner.callbacks.append(TerminateOnNaNCallback())
+    learner.callbacks.append(RNNTrainer(learner, context.sl, alpha=hyper_params['alpha'], beta=hyper_params['beta']))
 
     learner.callback_fns.append(partial(GradientClipping, clip=hyper_params['clip']))
     learner.split(rnn_classifier_split)
