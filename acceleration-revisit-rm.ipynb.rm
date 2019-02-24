@@ -1,0 +1,169 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2019-02-24T02:18:06.230387Z",
+     "start_time": "2019-02-24T02:17:59.344265Z"
+    }
+   },
+   "outputs": [],
+   "source": [
+    "%matplotlib inline\n",
+    "%reload_ext autoreload\n",
+    "%autoreload 2\n",
+    "\n",
+    "from config import *\n",
+    "context = Context('acceleration-revisit', debug=0, mulr=1, load_data=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {
+    "ExecuteTime": {
+     "end_time": "2019-02-24T02:22:52.446761Z",
+     "start_time": "2019-02-24T02:18:19.117736Z"
+    }
+   },
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "5b696a75931540dda38904cc688b95de",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(IntProgress(value=0, description='read_dataframe', max=3481, style=ProgressStyle(description_wi…"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "Drop non-numeric columns: 2\n",
+      "Drop constant columns (std == 0): 2\n",
+      "Replace numbered sensors with mean: 45\n",
+      "Drop columns of high correlation: 37\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "a23d7374d5e643bc922dfd0de7d39c0f",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(IntProgress(value=0, description='beginning_index', max=3481, style=ProgressStyle(description_w…"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "fmtr = DataFormatter(context, cycle_feathers=context.fn_cycles)\n",
+    "cycles = fmtr.cycles # shorten notation\n",
+    "# fmtr.drop_redundent_columns()\n",
+    "idx = fmtr.beginning_index()\n",
+    "df_conts, stat_x = fmtr.get_x(normalize=True)\n",
+    "deps, stat_y = fmtr.get_y(normalize=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Plot 出桩号时发现，早期的循环大多较长，后期较短，因此前后的循环可能有潜在的变化。验证算法时考虑（随机）取样"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Validate existing index"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "celltoolbar": "Tags",
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.2"
+  },
+  "notify_time": "10",
+  "varInspector": {
+   "cols": {
+    "lenName": 16,
+    "lenType": 16,
+    "lenVar": 40
+   },
+   "kernels_config": {
+    "python": {
+     "delete_cmd_postfix": "",
+     "delete_cmd_prefix": "del ",
+     "library": "var_list.py",
+     "varRefreshCmd": "print(var_dic_list())"
+    },
+    "r": {
+     "delete_cmd_postfix": ") ",
+     "delete_cmd_prefix": "rm(",
+     "library": "var_list.r",
+     "varRefreshCmd": "cat(var_dic_list()) "
+    }
+   },
+   "types_to_exclude": [
+    "module",
+    "function",
+    "builtin_function_or_method",
+    "instance",
+    "_Feature"
+   ],
+   "window_display": false
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

@@ -12,10 +12,7 @@ class MAPD(nn.Module):
         if self.stats is not None:
             input, target = (denormalize(o, *self.stats) for o in (input, target))
 
-        if isinstance(input, torch.Tensor):
-            return (1 - (input/(eps+target)).mean()).abs()
-        else:
-            return np.abs(1 - (input/(eps+target)).mean())
+        return ((input - target).abs() / (input + eps)).mean()
 
     # to inform fastai library the name of the metrics
     @property
