@@ -78,12 +78,8 @@ class Context:
 
         self.bs = int(self.num_cycles * train_ratio)
         
-
     @classmethod
     def all_columns(cls, exclude_columns=[], dep_var=dep_var1):
         columns = list(set(full_columns[2:]) - set(exclude_columns) - set(dep_var))
-        # if dep_var is not None:
-            # TODO: I think the test data won't include 桩号 so consider remove that from training data as well
-            # all_columns = 
         return columns
 

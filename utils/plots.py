@@ -6,6 +6,10 @@ def set_font(label, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
     prop = fm.FontProperties(fname=fname)
     plt.setp(label, fontproperties=prop)
 
+def set_ax_font(ax, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
+    if ax.legend_: set_font(ax.legend_.texts, fname=fname)
+    if ax.xaxis: set_font(ax.xaxis.label, fname=fname)
+    if ax.yaxis: set_font(ax.yaxis.label, fname=fname)
 
 def ceildiv(a, b):
     return -(-a//b)

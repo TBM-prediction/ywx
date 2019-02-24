@@ -70,11 +70,11 @@ def normalize_df(df, mean, std):
     return (df.loc[:,mean.index] - mean) / (eps + std)
 
 def denormalize(y, mean, std):
-    stats = (mean, std)
     if isinstance(y, torch.Tensor): 
+        stats = (mean, std)
         stats = (tensor(o).float() for o in stats)
         if y.device.type == 'cuda': stats = (o.cuda() for o in stats)
-    mean, std = (o for o in stats)
+        mean, std = stats
     return y * (eps + std) + mean
 
 # def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
@@ -106,9 +106,57 @@ def concat_cycles(cycles):
 
 def ni(it): return next(iter(it))
 
-def train_eval(learn):
-    # print score
-    pass
+def my_loss_batch(model, xb, yb, cb_handler=None):
+    out = model(*xb)
+    out = cb_handler.on_loss_begin(out)
+    return out.cpu()
 
-def evaluate(learn):
-    pass
+def valid(learner, context, ds_type=DatasetType.Valid):
+    xb,yb = learner.data.one_batch(ds_type, detach=False, denorm=False)
+    xb[1].requires_grad = True
+    yb = to_detach(yb)
+
+    # Get prediction
+    cb_handler = CallbackHandler(learner.callbacks) # rnn trainer
+    learner.model.eval().reset()
+    # set rnn to train mode to obtain gradient with respect to x
+    apply_leaf(learner.model, lambda m: m.train() if m.__module__.endswith('rnn') else None)
+    pb = my_loss_batch(learner.model, xb, yb, cb_handler=cb_handler)
+    print(xb[1].requires_grad)
+
+    # Calculate scores
+    loss, mapd = learner.loss_func(pb, yb), learner.metrics[0](pb, yb)
+    if 1:
+        print('Predicting mean: mapd =', to_np(learner.metrics[0](yb, yb.mean(0))))
+    print('mapd', to_np(mapd))
+
+    # Plot p against y. Expect linearity
+    x_np, y_np, p_np = (to_np(o).squeeze() for o in (xb[1],yb,pb))
+    yb_denormed, pb_denormed = (denormalize(o, *context.stat_y) for o in (y_np, p_np))
+    # xb_denormed = denormalize(x_np, *context.stat_x)
+    y_df, p_df = (pd.DataFrame(d, columns=[l+postfix for l in context.dep_var]) for d, postfix in zip((yb_denormed, pb_denormed), ('_y', '_p')))
+    result = pd.concat([y_df, p_df], axis=1)
+
+    for x, y in zip(result.columns, result.columns[result.columns.shape[0]//2:]):
+        ax = sns.jointplot(x, y, result, kind='reg', ratio=9, height=8)
+        set_ax_font(ax.ax_joint)
+
+    # Show influence of columns by taking derivatives
+    grad = to_np(torch.autograd.grad(mapd, xb[1], retain_graph=True)[0])
+    # Reshape to reflect sl dimension and average along that dimension
+    grad = grad.reshape((grad.shape[0], context.sl,
+        context.n_cont))
+    grad = np.abs(grad).mean(0).mean(0)
+
+    cont_names = [s[:-2] for s in context.cyc_cont.columns[:context.n_cont]]
+    influence = pd.DataFrame(grad, index=cont_names, columns=['grad']).sort_values('grad', ascending=False)
+    # plot the most influential columns
+    # x_df = reconstruct_flattened(xb_denormed, context)
+
+    return result, influence
+
+def reconstruct_flattened(x, context):
+    if isinstance(x, Tensor): x = to_np(x)
+    x = x.reshape(context.sl, len(context.cont_names))
+    return pd.DataFrame(x, columns=context.cont_names)
+    
