@@ -10,8 +10,7 @@ from crits import *
 # import jtplot submodule from jupyterthemes
 # currently installed theme will be used to
 # set plot style if no arguments provided
-from jupyterthemes import jtplot
-jtplot.style()
+from jupyterthemes import jtplot; jtplot.style()
 
 from typing import Callable
 
@@ -45,6 +44,7 @@ class Context:
 
 
     def __post_init__(self, fn_feather, load_data):
+        torch.cuda.set_device(self.gpu_start)
         if fn_feather is None: 
             fn_feather = Path(f'tbmData/feather/{self.exp_name}.feather')
         else:

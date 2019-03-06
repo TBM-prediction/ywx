@@ -7,9 +7,13 @@ def set_font(label, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
     plt.setp(label, fontproperties=prop)
 
 def set_ax_font(ax, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
-    if ax.legend_: set_font(ax.legend_.texts, fname=fname)
-    if ax.xaxis: set_font(ax.xaxis.label, fname=fname)
-    if ax.yaxis: set_font(ax.yaxis.label, fname=fname)
+    if hasattr(ax,'legend_'): set_font(ax.legend_.texts, fname=fname)
+    if hasattr(ax,'xaxis'): set_font(ax.xaxis.label, fname=fname)
+    if hasattr(ax,'yaxis'): set_font(ax.yaxis.label, fname=fname)
+    for ticklabels in (ax.xaxis.get_ticklabels(),ax.yaxis.get_ticklabels()):
+        if ticklabels:
+            for ticklabel in ticklabels: 
+                set_font(ticklabel, fname=fname)
 
 def ceildiv(a, b):
     return -(-a//b)
@@ -21,15 +25,14 @@ def plots(df_raw, cols=3, unit_figsize=(8, 3), ax=None,
     figsize = (unit_figsize[0] * cols, unit_figsize[1] * rows)
 
     if ax is not None: ax = ax.flatten()[:num_plots]
-    ax = df_raw.plot(subplots=True, figsize=figsize, 
+    axs = df_raw.plot(subplots=True, figsize=figsize, 
             layout=(rows, cols), ax=ax, legend=ax is None, title=title)
 
-    for a in ax.flatten():
-        if a.legend_: set_font(a.legend_.texts, fname=fname)
-        if a.xaxis: set_font(a.xaxis.label, fname=fname)
+    for ax in axs.flatten():
+        set_ax_font(ax)
 
     plt.tight_layout()
-    return ax
+    return axs
 
 def display_all(df):
     with pd.option_context("display.max_rows", 1000):

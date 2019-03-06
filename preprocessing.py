@@ -105,67 +105,81 @@ class DataFormatter:
         cycles = self.cycles # shorten notation
 
         # Drop non-numeric columns
-        n_dropped = 2; print('Drop non-numeric columns:', n_dropped)
-        cycles.drop(columns=['运行时间', '时间戳'], inplace=True)
+        n_dropped = 1; print('Drop non-numeric columns:', n_dropped)
+        cycles.drop(columns=['运行时间'], inplace=True)
 
         # Drop constant columns (std == 0)
         to_drop = cycles.columns[cycles.std() == 0]
-        n_dropped = len(to_drop); print('Drop constant columns (std == 0):',
-                n_dropped)
+        print('Drop constant columns: ', to_drop)
+        n_dropped = len(to_drop); print('Drop constant columns (std == 0):', n_dropped)
         cycles.drop(columns=to_drop, inplace=True)
 
-        # Before dropping numbered columns, average them
-        prog = re.compile('.*\d*#.*')
-        average_columns = [s for s in cycles.columns 
-                if re.match(prog, s) is not None]
-        # If we print the names of the columns, we can see the names are in
-            # groups of 10
-        n_dropped = 0
-        for i in range(0, len(average_columns), 10):
-            # Group columns of similar sensors
-            g = average_columns[i:i+10]
-            new_column = re.sub('\d#', '', g[0])
-            # Replace the first column in the group with the mean of the group
-            cycles.loc[:,g[0]] = cycles.loc[:,g].mean(1)
-            # Drop the rest of the group
-            n_dropped += len(g) - 1
-            cycles.drop(columns=g[1:], inplace=True)
-            # Remove the number in the name of the first column in the group
-            cycles.rename(columns={g[0]: new_column}, inplace=True, copy=False)
-        print('Replace numbered sensors with mean:', n_dropped)
 
-        # Drop columns of high correlation:
-        # https://chrisalbon.com/machine_learning/feature_selection/drop_highly_correlated_features/
-        # Protect '桩号' because 用来训练地质预测模型. Remember to exclude this column from input data.
-        protected_columns = ['桩号'] + dep_var1 + dep_var2
-        # Think about how to protect certain columns from being dropped. If
-        # columns i and j (i < j) are highly correlated, we only drop one of
-        # them by masking the correlation matrix with it's upper triangle, where
-        # the first index is smaller.
-
-        # Thus we only see correlation [i, j] in the masked matrix. And because
-        # we drop columns according the the high correlation value's column
-        # number, column i is protected from being dropped.
-
-        # In conclusion, to protect certain columns from being dropped, we
-        # should move it forward before computing the correlation matrix to
-        # assign it a smaller index number (which is i in the analysis).
-        reordered_columns = protected_columns + [c for c in cycles.columns if c not in protected_columns]
-        cycles = cycles.loc[:, reordered_columns]
-
-	# Create correlation matrix
-        corr_matrix = cycles.corr().abs()
-        # Select upper triangle of correlation matrix
-        upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
-        # Find index of feature columns with correlation greater than 0.95
-        to_drop = [c for c in upper.columns if np.any(upper.loc[:,c] > 0.95)]
-        assert all(o not in protected_columns for o in to_drop), """A protected
-        column is dropped. This happens when at least two of the protected
-        columns have high correlation."""
-        # Drop
-        n_dropped = len(to_drop); print('Drop columns of high correlation:',
-                n_dropped)
+        to_drop = ['主驱动2#电机输出功率', '主驱动6#电机输出功率', '主驱动8#电机输出功率', '主驱动2#电机电流', '主驱动5#电机电流', '主驱动8#电机电流', '主驱动2#电机扭矩', '主驱动6#电机扭矩', '主驱动8#电机扭矩', '主驱动2#电机输出频率', '主驱动6#电机输出频率', '主驱动8#电机输出频率',
+                     '减速机5#温度', '减速机4#温度', '减速机9#温度', '减速机3#温度', '减速机2#温度', '减速机7#温度', '减速机6#温度', '减速机8#温度', # drop anything other than 10# to be consistant with above
+                     '主驱动3#电机输出频率', '主驱动3#电机输出功率', '主驱动3#电机扭矩',
+                     # drop 7#, 5#, preserving 9
+                     '主驱动7#电机扭矩', '主驱动5#电机扭矩', '主驱动7#电机输出功率', '主驱动5#电机输出功率', '主驱动7#电机电流', '主驱动5#电机电流', '主驱动7#电机输出频率', '主驱动5#电机输出频率',
+                     '推进速度.1', '推进给定速度百分比', '右推进油缸行程检测', '刀盘运行时间', #'时间戳'?
+                     '二次风机频率设置', '推进压力', '刀盘给定转速显示值', '刀盘转速电位器设定值', '变频柜回水温度报警值', '拖车尾部CH4浓度', '污水箱压力检测']
+        print('to_drop', to_drop)
+        to_drop = [c for c in to_drop if c in cycles.columns]
+        print('valid to_drop', to_drop)
+        print('Drop highly correlated columns: ', to_drop)
         cycles.drop(columns=to_drop, inplace=True)
+
+        # # Before dropping numbered columns, average them
+        # prog = re.compile('.*\d*#.*')
+        # average_columns = [s for s in cycles.columns 
+                # if re.match(prog, s) is not None]
+        # # If we print the names of the columns, we can see the names are in
+            # # groups of 10
+        # n_dropped = 0
+        # for i in range(0, len(average_columns), 10):
+            # # Group columns of similar sensors
+            # g = average_columns[i:i+10]
+            # new_column = re.sub('\d#', '', g[0])
+            # # Replace the first column in the group with the mean of the group
+            # cycles.loc[:,g[0]] = cycles.loc[:,g].mean(1)
+            # # Drop the rest of the group
+            # n_dropped += len(g) - 1
+            # cycles.drop(columns=g[1:], inplace=True)
+            # # Remove the number in the name of the first column in the group
+            # cycles.rename(columns={g[0]: new_column}, inplace=True, copy=False)
+        # print('Replace numbered sensors with mean:', n_dropped)
+
+        # # Drop columns of high correlation:
+        # # https://chrisalbon.com/machine_learning/feature_selection/drop_highly_correlated_features/
+        # # Protect '桩号' because 用来训练地质预测模型. Remember to exclude this column from input data.
+        # protected_columns = ['桩号'] + dep_var1 + dep_var2
+        # # Think about how to protect certain columns from being dropped. If
+        # # columns i and j (i < j) are highly correlated, we only drop one of
+        # # them by masking the correlation matrix with it's upper triangle, where
+        # # the first index is smaller.
+
+        # # Thus we only preserve correlation [i, j] in the masked matrix. And because
+        # # we drop columns according to column number, column i is protected 
+        # # from being dropped.
+
+        # # In conclusion, to protect certain columns from being dropped, we
+        # # should move it forward before computing the correlation matrix to
+        # # assign it a smaller index number (which is i in the analysis).
+        # reordered_columns = protected_columns + [c for c in cycles.columns if c not in protected_columns]
+        # cycles = cycles.loc[:, reordered_columns]
+
+	# # Create correlation matrix
+        # corr_matrix = cycles.corr().abs()
+        # # Select upper triangle of correlation matrix
+        # upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(np.bool))
+        # # Find index of feature columns with correlation greater than 0.95
+        # to_drop = [c for c in upper.columns if np.any(upper.loc[:,c] > 0.95)]
+        # assert all(o not in protected_columns for o in to_drop), """A protected
+        # column is dropped. This happens when at least two of the protected
+        # columns have high correlation."""
+        # # Drop
+        # n_dropped = len(to_drop); print('Drop columns of high correlation:',
+                # n_dropped)
+        # cycles.drop(columns=to_drop, inplace=True)
 
 
     def get_x(self, noise_size=(-5,5), normalize=True):
@@ -201,12 +215,6 @@ class DataFormatter:
         cycles = ifnone(cycles, self.cycles)
         target_names = self.context.dep_var
         target_columns = [cycles.loc[o,target_names] for o in cycles.index.levels[0]]
-
-        # TODO: go more sophisticated
-        # take the last point and mode of values respectively
-        # cols = [o.astype('int') for o in target_columns]
-        #y = pd.DataFrame([(o.iloc[200:,0].mode().values[0].astype('float'), o.iloc[:,1].mode().values[0].astype('float')) for o in cols], columns=target_names)
-        # y = pd.DataFrame([(o.iloc[200:-100,0].mean(), o.iloc[200:-100,1].mean()) for o in cols], columns=target_names)
 
         if target_names == ['桩号']:
             # Use the value at the beginning of 上升段

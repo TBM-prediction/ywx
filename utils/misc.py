@@ -77,29 +77,6 @@ def denormalize(y, mean, std):
         mean, std = stats
     return y * (eps + std) + mean
 
-# def tile_with_noise(df, idx, config, noise_size=(-2, 5), normalize=True):
-    # mulr, cont_names, sl = config.mulr, config.cont_names, config.sl
-
-    # if normalize:
-        # tile = extract_input(df, idx, config.sl, cont_names)
-        # mean,std = tile.loc[:,cont_names].mean(),tile.loc[:,cont_names].std()
-        # df.loc[:,cont_names] = normalize_df(df, mean, std)
-
-    # tile = extract_input(df, idx, config.sl, cont_names) # extract with normalized df
-    # tiles = [tile]
-
-    # if config.mulr > 1:
-        # m, M = noise_size
-        # noises = (np.random.random(config.mulr-1) * (M-m+1)).astype('uint8') + m
-        # tiles += [extract_input(df, idx+n, config.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
-
-    # tiles = [t.loc[i] for t in tiles
-                        # for i in t.index.levels[0]]
-    # if normalize:
-        # return tiles, (mean, std)
-    # else:
-        # return tiles
-
 def concat_cycles(cycles):
     return pd.concat(cycles, axis=0, keys=range_of(cycles), names=['cycle', 't'])
 
@@ -113,7 +90,7 @@ def my_loss_batch(model, xb, yb, cb_handler=None):
 
 def valid(learner, context, ds_type=DatasetType.Valid):
     xb,yb = learner.data.one_batch(ds_type, detach=False, denorm=False)
-    xb[1].requires_grad = True
+    xb[1].requires_grad = True # enable the calculation of gradient
     yb = to_detach(yb)
 
     # Get prediction
@@ -122,7 +99,6 @@ def valid(learner, context, ds_type=DatasetType.Valid):
     # set rnn to train mode to obtain gradient with respect to x
     apply_leaf(learner.model, lambda m: m.train() if m.__module__.endswith('rnn') else None)
     pb = my_loss_batch(learner.model, xb, yb, cb_handler=cb_handler)
-    print(xb[1].requires_grad)
 
     # Calculate scores
     loss, mapd = learner.loss_func(pb, yb), learner.metrics[0](pb, yb)
@@ -160,3 +136,4 @@ def reconstruct_flattened(x, context):
     x = x.reshape(context.sl, len(context.cont_names))
     return pd.DataFrame(x, columns=context.cont_names)
     
+
