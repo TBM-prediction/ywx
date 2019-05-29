@@ -31,6 +31,7 @@ class Context:
 
     debug: bool = True
     gpu_start: int = 2
+    num_gpus: int = 1
     sl: int = 30
     postpond: int = 0
     font: str = '/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'
@@ -38,13 +39,21 @@ class Context:
     mulr: int = 7
     valid_ratio: float = 0.2
     is_problem1: bool = True
+    extra_var: List[str] = field(default_factory=list)
     dep_var: List[str] = field(default_factory=list)
 
     load_data: InitVar[bool] = True
 
 
     def __post_init__(self, fn_feather, load_data):
+        # configure gpu
         torch.cuda.set_device(self.gpu_start)
+        device_ids = list(range(self.gpu_start, self.gpu_start+self.num_gpus))
+        import os
+        os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+        os.environ["CUDA_VISIBLE_DEVICES"]=','.join([str(o) for o in
+            device_ids])  # specify which GPU(s) to be used
+
         if fn_feather is None: 
             fn_feather = Path(f'tbmData/feather/{self.exp_name}.feather')
         else:
@@ -52,17 +61,23 @@ class Context:
         fn_feather.parent.mkdir(exist_ok=True)
         self.fn_np = str(fn_feather.parent / (fn_feather.stem + '.npz'))
         self.fn_feather = str(fn_feather)
-        self.num_cycles = 300 if self.debug else 3481
-        self.fn_cycles = sorted(Path(self.fn_cycles).glob('cycle*'))[:self.num_cycles]
+        # super hacky
+        if not isinstance(self.fn_cycles, Tuple):
+            self.fn_cycles = sorted(Path(self.fn_cycles).glob('cycle*'))
+        else:
+            self.fn_cycles = self.fn_cycles[1]
+
+        self.num_cycles = 300 if self.debug else len(self.fn_cycles)
+        if self.debug: self.fn_cycles = self.fn_cycles[:self.num_cycles]
 
         # Fill with default dep_vars
         if len(self.dep_var) == 0:
-            self.dep_var = dep_var1
+            self.dep_var = dep_var2
 
         # Load data
         if load_data:
             npz = np.load(self.fn_np)
-            self.idx, self.stat_x, self.stat_y = npz['idx'], npz['stat_x'], npz['stat_y']
+            self.idx, self.stat_x, self.stat_y, self.stat_extra_x = npz['idx'], npz['stat_x'], npz['stat_y'], npz['stat_extra_x']
             self.metrics = MAPD(self.stat_y)
             self.cyc_cont = pd.read_feather(self.fn_feather)
             self.n_cont = (self.cyc_cont.shape[1] - len(self.dep_var)) // self.sl

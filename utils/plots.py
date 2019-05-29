@@ -7,7 +7,8 @@ def set_font(label, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
     plt.setp(label, fontproperties=prop)
 
 def set_ax_font(ax, fname='/usr/share/fonts/wqy-microhei/wqy-microhei.ttc'):
-    if hasattr(ax,'legend_'): set_font(ax.legend_.texts, fname=fname)
+    if ax.legend_ is not None: set_font(ax.legend_.texts, fname=fname)
+    set_font(ax.title, fname=fname)
     if hasattr(ax,'xaxis'): set_font(ax.xaxis.label, fname=fname)
     if hasattr(ax,'yaxis'): set_font(ax.yaxis.label, fname=fname)
     for ticklabels in (ax.xaxis.get_ticklabels(),ax.yaxis.get_ticklabels()):
@@ -38,3 +39,4 @@ def display_all(df):
     with pd.option_context("display.max_rows", 1000):
         with pd.option_context("display.max_columns", 1000):
             display(df)
+

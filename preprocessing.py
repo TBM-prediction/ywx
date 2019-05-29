@@ -39,7 +39,7 @@ class DataFormatter:
         print('Interpolating...')
         self.df_raw.interpolate(inplace=True)
 
-    def cycles1(self, fn=None, first_idx=0):
+    def cycles1(self, fn=None, first_idx=0, min_cycle_length=500, debug=False):
         # split time series into cycles
         df = self.df_raw.loc[:,'推进速度']
         begins, ends = zero_boundary(df)
@@ -50,8 +50,7 @@ class DataFormatter:
         self.cycles = []
         self.short_cycles = []
         for b, e in zip(begins, ends):
-            min_cycle_length = 500
-            # fileter out cycles that are too short
+            # filter out cycles that are too short
             cyc = self.df_raw.iloc[b:e].reset_index(drop=True)
             if e - b > min_cycle_length:
                 self.cycles.append(cyc)
@@ -62,6 +61,7 @@ class DataFormatter:
                 cyc.to_feather(str(fn) + str(first_idx+i))
         print(f'got {len(self.cycles)} cycles, filtered {len(self.short_cycles)} short cycles.')
         #print([len(o) for o in self.short_cycles])
+        if debug: return self.cycles, self.short_cycles
 
     def cycles2(self, save_fn=None, first_idx=0):
         # split time series into cycles
@@ -103,30 +103,25 @@ class DataFormatter:
 
     def drop_redundent_columns(self):
         cycles = self.cycles # shorten notation
-
-        # Drop non-numeric columns
-        n_dropped = 1; print('Drop non-numeric columns:', n_dropped)
-        cycles.drop(columns=['运行时间'], inplace=True)
+        cycles.drop(columns=['运行时间'], inplace=True, errors='ignore')
 
         # Drop constant columns (std == 0)
-        to_drop = cycles.columns[cycles.std() == 0]
-        print('Drop constant columns: ', to_drop)
-        n_dropped = len(to_drop); print('Drop constant columns (std == 0):', n_dropped)
-        cycles.drop(columns=to_drop, inplace=True)
-
-
-        to_drop = ['主驱动2#电机输出功率', '主驱动6#电机输出功率', '主驱动8#电机输出功率', '主驱动2#电机电流', '主驱动5#电机电流', '主驱动8#电机电流', '主驱动2#电机扭矩', '主驱动6#电机扭矩', '主驱动8#电机扭矩', '主驱动2#电机输出频率', '主驱动6#电机输出频率', '主驱动8#电机输出频率',
+        to_drop = set()
+        to_drop |= set(cycles.columns[(cycles.std() == 0)])
+        to_drop |= {'主驱动2#电机输出功率', '主驱动6#电机输出功率', '主驱动8#电机输出功率', '主驱动2#电机电流', '主驱动5#电机电流', '主驱动8#电机电流', '主驱动2#电机扭矩', '主驱动6#电机扭矩', '主驱动8#电机扭矩', '主驱动2#电机输出频率', '主驱动6#电机输出频率', '主驱动8#电机输出频率',
                      '减速机5#温度', '减速机4#温度', '减速机9#温度', '减速机3#温度', '减速机2#温度', '减速机7#温度', '减速机6#温度', '减速机8#温度', # drop anything other than 10# to be consistant with above
                      '主驱动3#电机输出频率', '主驱动3#电机输出功率', '主驱动3#电机扭矩',
                      # drop 7#, 5#, preserving 9
                      '主驱动7#电机扭矩', '主驱动5#电机扭矩', '主驱动7#电机输出功率', '主驱动5#电机输出功率', '主驱动7#电机电流', '主驱动5#电机电流', '主驱动7#电机输出频率', '主驱动5#电机输出频率',
-                     '推进速度.1', '推进给定速度百分比', '右推进油缸行程检测', '刀盘运行时间', #'时间戳'?
-                     '二次风机频率设置', '推进压力', '刀盘给定转速显示值', '刀盘转速电位器设定值', '变频柜回水温度报警值', '拖车尾部CH4浓度', '污水箱压力检测']
-        print('to_drop', to_drop)
-        to_drop = [c for c in to_drop if c in cycles.columns]
-        print('valid to_drop', to_drop)
-        print('Drop highly correlated columns: ', to_drop)
-        cycles.drop(columns=to_drop, inplace=True)
+                     '推进速度.1', '推进给定速度百分比', '右推进油缸行程检测',
+                     '时间戳', '刀盘运行时间',
+                     '二次风机频率设置', '推进压力', '刀盘给定转速显示值',
+                     '刀盘转速电位器设定值', '变频柜回水温度报警值',
+                     '拖车尾部CH4浓度', '污水箱压力检测'}
+        to_drop = [c for c in to_drop if c in cycles.columns] + ['运行时间']
+        print('valid to_drop', to_drop, len(to_drop))
+        cycles.drop(columns=to_drop, inplace=True, errors='ignore')
+        return to_drop
 
         # # Before dropping numbered columns, average them
         # prog = re.compile('.*\d*#.*')
@@ -182,36 +177,55 @@ class DataFormatter:
         # cycles.drop(columns=to_drop, inplace=True)
 
 
-    def get_x(self, noise_size=(-5,5), normalize=True):
+    def get_x(self, noise_size=(-3,4), normalize=True, stat_x=None):
         df = self.cycles
-        # Exclude dep_var and '桩号' from input data
-        cont_names = [c for c in df.columns if c not in self.context.dep_var and
-                c != '桩号']
+
+        # Exclude '桩号' from input data
+        cont_names = [c for c in df.columns if c != '桩号']
+        # cont_names = df.columns # include it
+        print('cont names', len(cont_names))
 
         if normalize:
-            tile = extract_input(df, self.idx, self.context.sl, cont_names)
-            mean,std = tile.loc[:,cont_names].mean(),tile.loc[:,cont_names].std()
-            df.loc[:,cont_names] = normalize_df(df, mean, std)
+            norm_cont_names = cont_names + ['桩号']
+            tile = extract_input(df, self.idx, self.context.sl, norm_cont_names)
+            mean,std = ifnone(stat_x,
+                    (tile.loc[:,norm_cont_names].mean(),tile.loc[:,norm_cont_names].std()))
+            df.loc[:,cont_names] = normalize_df(df, mean.iloc[:-1], std.iloc[:-1])
 
         tile = extract_input(df, self.idx, self.context.sl, cont_names) # extract with normalized df
         tiles = [tile]
 
         # Tile *mulr* times with noise
         if self.context.mulr > 1:
-            m, M = noise_size
-            noises = (np.random.random(self.context.mulr-1) * (M-m+1)).astype('uint8') + m
+            # m, M = noise_size
+            # noises = (np.random.random(self.context.mulr-1) * (M-m+1)).astype('uint8') + m
+            noises = np.random.permutation(range(*noise_size))[:self.context.mulr-1]
             print('Noises:', noises)
             tiles += [extract_input(df, self.idx+n, self.context.sl, cont_names) for n in tqdm_notebook(noises, 'tile_with_noise')]
 
         # flatten along cycle
-        tiles = [t.loc[i] for t in tiles for i in t.index.levels[0]]
+        tiles = [t.loc[i] for t in tiles for i in t.index.levels[0] if i in t.index]
         if normalize:
             return tiles, (mean, std)
         else:
             return tiles
 
+    def get_extra_x_task2(self, cycles=None):
+        cycles = ifnone(cycles, self.cycles)
+        target_names = ['桩号', '推进速度', '刀盘转速']
+        target_columns = [cycles.loc[o,target_names] for o in cycles.index.levels[0]]
 
-    def get_y(self, cycles=None, normalize=True):
+        # Use the mean of the values at 稳定段
+        # TODO: think again
+        y = pd.DataFrame([o.iloc[200:-100].mean(0) for o in target_columns], columns=target_names)
+
+        if self.context.mulr > 1:
+            y = pd.concat([y]*self.context.mulr).reset_index(drop=True)
+
+        return y
+
+
+    def get_y(self, cycles=None):
         cycles = ifnone(cycles, self.cycles)
         target_names = self.context.dep_var
         target_columns = [cycles.loc[o,target_names] for o in cycles.index.levels[0]]
@@ -222,15 +236,11 @@ class DataFormatter:
                 zip(target_columns,self.idx)],
                 columns=target_names).reset_index(drop=True)
         else:
-            # Use the mean of the values of 稳定段
+            # Use the mean of the values at 稳定段
             y = pd.DataFrame([o.iloc[200:-100].mean(0) for o in target_columns], columns=target_names)
 
-
-        if normalize:
-            mean,std = y.mean(),y.std()
-            y = normalize_df(y, mean, std)
         if self.context.mulr > 1:
             y = pd.concat([y]*self.context.mulr).reset_index(drop=True)
 
-        return y, (mean, std) if normalize else y
+        return y
 
